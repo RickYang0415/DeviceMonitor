@@ -22,50 +22,17 @@ namespace DeviceMonitor
             listView1.View = View.Details;
             listView1.Columns.Add("SN", 150);
             listView1.Columns.Add("Model", 150);
-
+            listView1.CheckBoxes = true;
             server = new Server();
             this.label1.Text = string.Format("{0}: {1}:{2}", "IP Address: ", server.GetLocalAddress(), Convert.ToString(host));
             server.Start(IPAddress.Any, host);
-            server.SetCallBackFun(UpdateUI, RefreshDevice);
-
-            timer1.Enabled = false;
+            server.SetCallBackFun(RefreshDevice);
             this.CenterToScreen();
         }
-
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             server.Stop();
-        }
-
-        public void UpdateUI(string myStr)
-        {
-            if (this.InvokeRequired)
-            {
-                UICallBack ui = new UICallBack(UpdateUI);
-                this.Invoke(ui, myStr);
-            }
-            else
-            {
-                this.textBox1.Text += myStr + "\r\n";
-            }
-        }
-
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            listView1.Items.Clear();
-            foreach (Server.DeviceInfo item in server.deviceInfo)
-            {
-                String[] arg = { item.model, item.sn };
-                ListViewItem listItem = new ListViewItem(arg);
-                listView1.Items.Add(listItem);
-            }
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            //RefreshDevice();
-            this.textBox1.Text = "";
         }
 
         public void RefreshDevice()
@@ -78,7 +45,7 @@ namespace DeviceMonitor
             else
             {
                 listView1.Items.Clear();
-                foreach (Server.DeviceInfo item in server.deviceInfo)
+                foreach (DeviceInfo item in Server.deviceInfo)
                 {
                     String[] arg = { item.sn, item.model };
                     ListViewItem listItem = new ListViewItem(arg);
@@ -89,22 +56,34 @@ namespace DeviceMonitor
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (this.button1.Text.Equals("Start"))
+            List<String> checkList = new List<string>();
+            foreach (ListViewItem item in listView1.Items)
             {
-                if (listView1.SelectedItems.Count != 0)
+                if (item.Checked)
                 {
-                    String sn = listView1.SelectedItems[0].Text;
-                    server.StartObserve(sn);
-                    this.listView1.Enabled = false;
-                    this.button1.Text = "Stop";
+                    checkList.Add(item.Text);
                 }
             }
-            else
+            if (checkList.Count != 0)
             {
-                server.StopObserve();
-                this.listView1.Enabled = true;
-                this.button1.Text = "Start";
+                server.StartObserve(checkList.ToArray());
+                Form2 form2 = new Form2(checkList);
+                form2.SetCallBack(StopObserve);
+                form2.Show();
+                this.button1.Enabled = false;
             }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            StopObserve();
+            this.Close();
+        }
+
+        void StopObserve()
+        {
+            server.StopObserve();
+            this.button1.Enabled = true;
         }
     }
 }

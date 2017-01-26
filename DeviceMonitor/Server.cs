@@ -13,6 +13,7 @@ namespace DeviceMonitor
     enum Command
     {
         Connect,
+        Connect_Success,
         Disconncet,
         Observe,
         Stop_Observe,
@@ -123,6 +124,15 @@ namespace DeviceMonitor
                                 deviceInfo.Add(device);
                                 if (m_RefreshCallBack != null)
                                     m_RefreshCallBack();
+                                try
+                                {
+                                    EndPoint remote = new IPEndPoint(IPAddress.Parse(device.ip), Convert.ToInt32(device.port));
+                                    m_LocalSocket.SendTo(Encoding.UTF8.GetBytes(String.Format("{0}|{1}", (int)Command.Connect_Success, device.sn)), remote);
+                                }
+                                catch (System.Exception ex)
+                                {
+                                    Debug.WriteLine(ex.ToString());
+                                }
                                 break;
                             case (int)Command.Disconncet:
                                 device.sn = arr[2];
@@ -168,7 +178,7 @@ namespace DeviceMonitor
             return true;
         }
 
-        public void StartObserve(String [] snList)
+        public void StartObserve(String[] snList)
         {
             m_deviceList = new List<DeviceObserve>();
             foreach (String sn in snList)
@@ -187,7 +197,7 @@ namespace DeviceMonitor
         {
             if (m_deviceList == null)
                 return;
-            foreach(DeviceObserve item in m_deviceList)
+            foreach (DeviceObserve item in m_deviceList)
             {
                 item.Stop();
             }
